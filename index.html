@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF Tools – free PDF tools, files device se bahar nahi jaati</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<style>
+:root{--bg:#f3f0ed;--card:#fff;--ink:#33302e;--mute:#7a7672;--line:#e5e1dc;--red:#e5322d;--redink:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1a1817;--card:#262322;--ink:#f0ece8;--mute:#a39e98;--line:#3b3735;--red:#f0524d;--redink:#1c0806}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+nav{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
+nav i{font-style:normal;background:var(--red);color:var(--redink);border-radius:6px;padding:0 8px}
+nav a{margin-left:auto;font-size:14px;font-weight:400;color:var(--mute);cursor:pointer;text-decoration:underline}
+.hero{text-align:center;padding:44px 20px 18px}
+.hero h1{font-size:clamp(26px,6vw,42px);line-height:1.15;margin:0 0 10px}
+.hero p{color:var(--mute);margin:0 auto;max-width:50ch}
+main{max-width:1000px;margin:0 auto;padding:16px 16px 40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.tool{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:22px 18px;text-align:left;cursor:pointer;color:inherit;font:inherit;border-top:4px solid var(--c)}
+.tool:hover,.tool:focus-visible{box-shadow:0 4px 18px #0002;outline:none}
+.tool em{font-style:normal;font-size:34px;display:block;margin-bottom:6px}
+.tool b{display:block;font-size:17px}
+.tool span{color:var(--mute);font-size:14px}
+#panel{display:none;max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:24px}
+#panel h2{margin:0 0 4px;font-size:26px}
+#panel p{color:var(--mute);margin:0 0 16px}
+.drop{border:2px dashed var(--red);border-radius:6px;padding:30px 16px;text-align:center;cursor:pointer;color:var(--mute)}
+.drop.on{background:var(--bg)}
+ul{list-style:none;padding:0;margin:14px 0}
+li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+li button{background:none;border:0;color:var(--red);cursor:pointer;font:inherit}
+.opt{margin:12px 0}
+.opt label{display:block;margin-bottom:10px;font-size:14px}
+.opt input,.opt select{font:inherit;padding:9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;margin-top:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn{background:var(--red);color:var(--redink);border:0;border-radius:6px;padding:13px 26px;font:600 17px inherit;font-family:inherit;cursor:pointer}
+.btn.g{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+#msg{margin-top:14px;font-size:14px;color:var(--mute);min-height:20px;white-space:pre-wrap}
+dialog{border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);max-width:460px;width:92%}
+dialog input{font:inherit;padding:9px;width:100%;margin:8px 0;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+footer{text-align:center;color:var(--mute);font-size:13px;padding:0 20px 36px}
+</style>
+</head>
+<body>
+<nav><i>PDF</i>Tools<a id="set">Server settings</a></nav>
+<div class="hero"><h1>Saare PDF tools ek jagah, free</h1><p>Sab kaam aapke browser mein hota hai. Koi sign-up nahi, koi limit nahi, file upload nahi hoti.</p></div>
+<main>
+<div id="grid" class="grid"></div>
+<section id="panel">
+<h2 id="pt"></h2><p id="pd"></p>
+<div class="drop" id="drop" tabindex="0">File yahan chhodein ya tap karke chunein</div>
+<input type="file" id="fi" hidden>
+<ul id="fl"></ul>
+<div id="opts"></div>
+<div class="row"><button class="btn" id="go" disabled>Shuru karo</button><button class="btn g" id="back">Wapas</button></div>
+<div id="msg" role="status"></div>
+</section>
+</main>
+<footer>PDF to Word browser mein hota hai: text aur formatting aati hai, tables aur images nahi. Scanned PDF ke liye Scan to Word (OCR) use karein.</footer>
+<dialog id="dlg"><form method="dialog"><b>Converter server (optional)</b><p style="font-size:14px;color:var(--mute)">server.py ko Render ya Railway par chalakar uska URL yahan daalein. Tab PDF to Word asli layout ke saath hoga.</p><input id="api" placeholder="https://mera-server.onrender.com"><button class="btn">Save</button></form></dialog>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $=id=>document.getElementById(id);
+const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const buf=f=>f.arrayBuffer();
+const save=(d,n,t)=>{const a=document.createElement('a');a.href=URL.createObjectURL(d instanceof Blob?d:new Blob([d],{type:t}));a.download=n;a.click()};
+const base=f=>f.name.replace(/\.[^.]+$/,'');
+const ranges=(s,n)=>{const o=[];s.split(',').forEach(p=>{const m=p.trim().match(/^(\d+)(?:-(\d+))?$/);if(!m)return;for(let i=+m[1];i<=+(m[2]||m[1]);i++)if(i>=1&&i<=n)o.push(i-1)});return o};
+const loadPdf=async f=>PDFLib.PDFDocument.load(await buf(f),{ignoreEncryption:true});
+const openPdf=async f=>pdfjsLib.getDocument({data:await buf(f)}).promise;
+const canvasOf=async(pdf,p,s)=>{const pg=await pdf.getPage(p),vp=pg.getViewport({scale:s}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;return c};
+const toBlob=(c,q)=>new Promise(r=>c.toBlob(r,'image/jpeg',q));
+const para=(t,br)=>new docx.Paragraph({pageBreakBefore:!!br,children:[new docx.TextRun(t)]});
+const pdfOut=async(d,n)=>{save(await d.save(),n,'application/pdf')};
+
+const tools=[
+{id:'word',e:'📝',c:'#2b79c2',name:'PDF to Word',desc:'PDF ko .docx mein badlo',accept:'.pdf',opt:()=>'<p style="margin:0;font-size:13px">'+((store.get('api')||autoApi)?'Server se asli layout milega.':'Browser mode: text, font size, bold aur alignment bachte hain. Tables aur images nahi aate.')+'</p>',run:async(fs,msg)=>{
+ const api=(store.get('api')||autoApi).replace(/\/$/,'');
+ if(api){msg('Server par convert ho raha hai (pehli baar 1 minute lag sakta hai)...');const fd=new FormData();fd.append('file',fs[0]);
+  const r=await fetch(api+'/convert',{method:'POST',body:fd});if(!r.ok)throw Error('Server ne error diya');save(await r.blob(),base(fs[0])+'.docx');return 'Word file download ho gayi (asli layout).'}
+ const pdf=await openPdf(fs[0]),kids=[];
+ for(let p=1;p<=pdf.numPages;p++){msg('Page '+p+' / '+pdf.numPages);const pg=await pdf.getPage(p),pw=pg.view[2],tc=await pg.getTextContent(),st=tc.styles,L=[];
+  tc.items.filter(i=>i.str.trim()).forEach(i=>{const y=i.transform[5];let l=L.find(l=>Math.abs(l.y-y)<3);if(!l)L.push(l={y,t:[]});l.t.push({x:i.transform[4],e:i.transform[4]+i.width,s:i.str,sz:Math.abs(i.transform[3])||i.height||11,b:/bold|black|heavy/i.test(((st[i.fontName]||{}).fontFamily||'')+i.fontName)})});
+  L.sort((a,b)=>b.y-a.y);let prev=null;
+  L.forEach((l,k)=>{l.t.sort((a,b)=>a.x-b.x);const sz=Math.max(...l.t.map(t=>t.sz)),x0=l.t[0].x,x1=Math.max(...l.t.map(t=>t.e)),gap=prev?prev.y-l.y:0,ctr=Math.abs((x0+x1)/2-pw/2)<pw*.04&&x0>pw*.15,runs=[];let last=null;
+   l.t.forEach(t=>{const sp=last&&t.x-last.e>sz*.15&&!/^\s/.test(t.s)?' ':'';runs.push(new docx.TextRun({text:sp+t.s,size:Math.max(2,Math.round(t.sz*2)),bold:t.b}));last=t});
+   kids.push(new docx.Paragraph({pageBreakBefore:k==0&&p>1,alignment:ctr?docx.AlignmentType.CENTER:docx.AlignmentType.LEFT,indent:{left:ctr?0:Math.round(Math.max(0,x0-pw*.1)*20)},spacing:{before:prev&&gap>sz*1.8?Math.round((gap-sz*1.2)*10):0,after:0},children:runs}));prev=l});
+  if(!L.length)kids.push(para('',p>1))}
+ save(await docx.Packer.toBlob(new docx.Document({sections:[{children:kids}]})),base(fs[0])+'.docx');return 'Word file download ho gayi (text aur formatting).'}},
+{id:'ocr',e:'🔍',c:'#8a4fc7',name:'Scan to Word (OCR)',desc:'Scanned PDF ya photo se text',accept:'.pdf,.jpg,.jpeg,.png',opt:()=>'<label>Bhasha<select id="o1"><option value="eng">English</option><option value="hin">Hindi</option><option value="eng+hin">English + Hindi</option></select></label>',run:async(fs,msg)=>{
+ const f=fs[0],isPdf=/pdf$/i.test(f.name),kids=[];msg('OCR engine load ho raha hai...');
+ const w=await Tesseract.createWorker($('o1').value);
+ let n=1,pdf;if(isPdf){pdf=await openPdf(f);n=pdf.numPages}
+ for(let p=1;p<=n;p++){msg('OCR: page '+p+' / '+n);let src;
+  if(isPdf)src=await canvasOf(pdf,p,2);else src=f;
+  const {data}=await w.recognize(src);
+  data.text.split(/\n+/).filter(s=>s.trim()).forEach((s,k)=>kids.push(para(s,k==0&&p>1)))}
+ await w.terminate();
+ save(await docx.Packer.toBlob(new docx.Document({sections:[{children:kids.length?kids:[para('')]}]})),base(f)+'-ocr.docx');return 'OCR Word file download ho gayi.'}},
+{id:'merge',e:'🧩',c:'#e5322d',name:'Merge PDF',desc:'Kai PDF ko ek banao',accept:'.pdf',multi:true,min:2,run:async fs=>{
+ const out=await PDFLib.PDFDocument.create();
+ for(const f of fs){const d=await loadPdf(f);(await out.copyPages(d,d.getPageIndices())).forEach(p=>out.addPage(p))}
+ await pdfOut(out,'merged.pdf');return 'merged.pdf download ho gayi.'}},
+{id:'split',e:'✂️',c:'#e5322d',name:'Split PDF',desc:'Chune hue pages alag nikalo',accept:'.pdf',opt:()=>'<label>Pages (jaise 1-3,5)<input id="o1" placeholder="1-3,5"></label>',run:async fs=>{
+ const d=await loadPdf(fs[0]),idx=ranges($('o1').value,d.getPageCount());if(!idx.length)throw Error('Sahi page range likhein, jaise 1-3,5');
+ const out=await PDFLib.PDFDocument.create();(await out.copyPages(d,idx)).forEach(p=>out.addPage(p));
+ await pdfOut(out,base(fs[0])+'-pages.pdf');return idx.length+' pages nikal liye.'}},
+{id:'compress',e:'🗜️',c:'#4caf50',name:'Compress PDF',desc:'File size chhota karo',accept:'.pdf',opt:()=>'<label>Quality<select id="o1"><option value="0.7">Achhi (thoda chhota)</option><option value="0.5" selected>Medium</option><option value="0.3">Sabse chhota</option></select></label><p style="margin:0;font-size:13px">Har page photo ban jaata hai, isliye text select nahi hoga.</p>',run:async(fs,msg)=>{
+ const pdf=await openPdf(fs[0]),out=await PDFLib.PDFDocument.create(),q=+$('o1').value;
+ for(let p=1;p<=pdf.numPages;p++){msg('Page '+p+' / '+pdf.numPages);const c=await canvasOf(pdf,p,1.4),im=await out.embedJpg(await(await toBlob(c,q)).arrayBuffer()),pg=out.addPage([c.width*.75,c.height*.75]);pg.drawImage(im,{x:0,y:0,width:c.width*.75,height:c.height*.75})}
+ const b=await out.save();await pdfOut(out,base(fs[0])+'-small.pdf');return 'Size: '+(fs[0].size/1024|0)+' KB se '+(b.length/1024|0)+' KB.'+(b.length>=fs[0].size?' Ye file pehle se chhoti thi, original hi rakhein.':'')}},
+{id:'rotate',e:'🔄',c:'#e5322d',name:'Rotate PDF',desc:'Saare pages ghumao',accept:'.pdf',opt:()=>'<label>Angle<select id="o1"><option>90</option><option>180</option><option>270</option></select></label>',run:async fs=>{
+ const d=await loadPdf(fs[0]),a=+$('o1').value;d.getPages().forEach(p=>p.setRotation(PDFLib.degrees((p.getRotation().angle+a)%360)));
+ await pdfOut(d,base(fs[0])+'-rotated.pdf');return 'Rotate ho gaya.'}},
+{id:'wm',e:'💧',c:'#f5a623',name:'Watermark',desc:'Har page par text stamp',accept:'.pdf',opt:()=>'<label>Watermark text (English)<input id="o1" value="CONFIDENTIAL"></label>',run:async fs=>{
+ const d=await loadPdf(fs[0]),f=await d.embedFont(PDFLib.StandardFonts.HelveticaBold),t=$('o1').value||'WATERMARK';
+ d.getPages().forEach(p=>{const{width:w,height:h}=p.getSize(),s=Math.min(w/(t.length*.6),h/4);p.drawText(t,{x:w/2-s*t.length*.3*.7,y:h/2-s*.35*.7,size:s,font:f,color:PDFLib.rgb(.8,.1,.1),opacity:.25,rotate:PDFLib.degrees(45)})});
+ await pdfOut(d,base(fs[0])+'-watermark.pdf');return 'Watermark lag gaya.'}},
+{id:'num',e:'🔢',c:'#f5a623',name:'Page numbers',desc:'Har page par number daalo',accept:'.pdf',run:async fs=>{
+ const d=await loadPdf(fs[0]),f=await d.embedFont(PDFLib.StandardFonts.Helvetica),n=d.getPageCount();
+ d.getPages().forEach((p,i)=>{const t=(i+1)+' / '+n,w=f.widthOfTextAtSize(t,11);p.drawText(t,{x:(p.getWidth()-w)/2,y:20,size:11,font:f})});
+ await pdfOut(d,base(fs[0])+'-numbered.pdf');return 'Page numbers lag gaye.'}},
+{id:'img',e:'🖼️',c:'#f5d00f',name:'JPG to PDF',desc:'Photos ko PDF banao',accept:'.jpg,.jpeg,.png',multi:true,run:async fs=>{
+ const out=await PDFLib.PDFDocument.create();
+ for(const f of fs){const b=await buf(f),im=/png$/i.test(f.name)?await out.embedPng(b):await out.embedJpg(b);out.addPage([im.width,im.height]).drawImage(im,{x:0,y:0,width:im.width,height:im.height})}
+ await pdfOut(out,'images.pdf');return 'images.pdf download ho gayi.'}},
+{id:'jpg',e:'📷',c:'#f5d00f',name:'PDF to JPG',desc:'Har page ki photo (zip)',accept:'.pdf',run:async(fs,msg)=>{
+ const pdf=await openPdf(fs[0]),z=new JSZip();
+ for(let p=1;p<=pdf.numPages;p++){msg('Page '+p+' / '+pdf.numPages);z.file('page-'+p+'.jpg',await toBlob(await canvasOf(pdf,p,2),.9))}
+ save(await z.generateAsync({type:'blob'}),base(fs[0])+'-pages.zip');return 'Zip download ho gayi.'}}
+];
+
+let autoApi='';fetch('health').then(r=>r.json()).then(j=>{if(j.converter)autoApi=location.origin}).catch(()=>{});
+let cur=null,files=[];
+$('grid').innerHTML=tools.map(t=>`<button class="tool" style="--c:${t.c}" data-id="${t.id}"><em>${t.e}</em><b>${t.name}</b><span>${t.desc}</span></button>`).join('');
+$('grid').onclick=e=>{const b=e.target.closest('.tool');if(b)open(b.dataset.id)};
+function open(id){cur=tools.find(t=>t.id==id);files=[];$('pt').textContent=cur.name;$('pd').textContent=cur.desc;
+ $('fi').accept=cur.accept;$('fi').multiple=!!cur.multi;$('opts').innerHTML=cur.opt?'<div class="opt">'+cur.opt()+'</div>':'';
+ $('grid').style.display='none';document.querySelector('.hero').style.display='none';$('panel').style.display='block';$('msg').textContent='';render();scrollTo(0,0)}
+$('back').onclick=()=>{$('panel').style.display='none';$('grid').style.display='grid';document.querySelector('.hero').style.display='block'};
+function render(){$('fl').innerHTML=files.map((f,i)=>`<li><span>${f.name}</span><button data-i="${i}">Hatao</button></li>`).join('');$('go').disabled=files.length<(cur.min||1)}
+const add=l=>{const a=[...l];files=cur.multi?files.concat(a):a.slice(0,1);render()};
+$('fl').onclick=e=>{const i=e.target.dataset.i;if(i!=null){files.splice(+i,1);render()}};
+$('drop').onclick=()=>$('fi').click();
+$('drop').onkeydown=e=>{if(e.key=='Enter')$('fi').click()};
+$('fi').onchange=e=>{add(e.target.files);e.target.value=''};
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('on')};
+$('drop').ondragleave=()=>$('drop').classList.remove('on');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('on');add(e.dataTransfer.files)};
+$('go').onclick=async()=>{$('go').disabled=true;$('msg').textContent='Ho raha hai...';
+ try{$('msg').textContent=await cur.run(files,m=>$('msg').textContent=m)}catch(err){$('msg').textContent='Error: '+err.message+'\nFile password-protected ya kharab ho sakti hai.'}
+ render()};
+$('set').onclick=()=>{$('api').value=store.get('api');$('dlg').showModal()};
+$('dlg').onclose=()=>{store.set('api',$('api').value.trim())};
+</script>
+</body>
+</html>
